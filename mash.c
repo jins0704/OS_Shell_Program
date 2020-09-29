@@ -21,6 +21,9 @@
 #include "types.h"
 #include "parser.h"
 
+#include <unistd.h>
+#include <sys/wait.h> 
+
 /*======================================================================*/
 /*          ****** DO NOT MODIFY ANYTHING FROM THIS LINE ******         */
 /**
@@ -69,16 +72,26 @@ static int run_command(int nr_tokens, char *tokens[])
 	if (strncmp(tokens[0], "exit", strlen("exit")) == 0) {
 		return 0;
 	}
+
 	if (strncmp(tokens[0], "prompt", strlen("prompt")) == 0) {
         strcpy(__prompt, tokens[1]);
-    } 
+		return 1;
+    }
+	
+	pid_t pid;
+	
+	if((pid = fork()) == 0){
+		if(execvp(tokens[0],tokens) == -1){
+			fprintf(stderr, "No such file or directory\n");
+			exit(EXIT_FAILURE);
+		}
+		else{exit(EXIT_SUCCESS);}
+	} 
 
-	/*
-	fork();
-	exec();
-	...
-	*/
-
+	else{
+		wait(NULL);
+	}
+	
 	return 1;
 }
 
