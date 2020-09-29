@@ -69,6 +69,9 @@ static int run_command(int nr_tokens, char *tokens[])
 	if (strncmp(tokens[0], "exit", strlen("exit")) == 0) {
 		return 0;
 	}
+	if (strncmp(tokens[0], "prompt", strlen("prompt")) == 0) {
+        strcpy(__prompt, tokens[1]);
+    } 
 
 	/*
 	fork();
