@@ -78,9 +78,22 @@ static int run_command(int nr_tokens, char *tokens[])
 		return 1;
     }
 	
+	if (strncmp(tokens[0], "/bin/pwd", strlen("/bin/pwd")) == 0) {
+		char buf[MAX_TOKEN_LEN];
+		getcwd(buf,MAX_TOKEN_LEN);
+		return 1;
+	}
+
+	if (strncmp(tokens[0], "cd", strlen("cd")) == 0) {
+        if (nr_tokens ==1 || strncmp(tokens[1], "~", strlen("~")) == 0){
+			chdir(getenv("HOME"));
+		}
+		return 1;
+    }
+
 	pid_t pid;
 	
-	if((pid = fork()) == 0){
+	if ((pid = fork()) == 0){
 		if(execvp(tokens[0],tokens) == -1){
 			fprintf(stderr, "No such file or directory\n");
 			exit(EXIT_FAILURE);
@@ -88,7 +101,7 @@ static int run_command(int nr_tokens, char *tokens[])
 		else{exit(EXIT_SUCCESS);}
 	} 
 
-	else{
+	else {
 		wait(NULL);
 	}
 	
