@@ -85,8 +85,21 @@ static int run_command(int nr_tokens, char *tokens[])
 	}
 
 	if (strncmp(tokens[0], "cd", strlen("cd")) == 0) {
-        if (nr_tokens ==1 || strncmp(tokens[1], "~", strlen("~")) == 0){
+        if (nr_tokens == 1 || strncmp(tokens[1], "~", strlen("~")) == 0){
 			chdir(getenv("HOME"));
+		}
+		else{
+			chdir(tokens[1]);
+
+		}
+		return 1;
+    }
+	if (strncmp(tokens[0], "timeout", strlen("timeout")) == 0) {
+		if (nr_tokens ==1){
+       		fprintf(stderr, "Current timeout is %d second\n",__timeout);
+		}
+		else {
+			set_timeout(atoi(tokens[1]));
 		}
 		return 1;
     }
