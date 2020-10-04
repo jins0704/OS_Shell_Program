@@ -23,6 +23,7 @@
 
 #include <unistd.h>
 #include <sys/wait.h> 
+#include <signal.h>
 
 /*======================================================================*/
 /*          ****** DO NOT MODIFY ANYTHING FROM THIS LINE ******         */
@@ -65,26 +66,32 @@ static void set_timeout(unsigned int timeout)
  *   Return 0 when user inputs "exit"
  *   Return <0 on error
  */
+
+pid_t pid,c_pid;
+static char name[MAX_TOKEN_LEN];
 static int run_command(int nr_tokens, char *tokens[])
 {
 	/* This function is all yours. Good luck! */
+	int status;
+	strcpy(name, tokens[0]);
 
 	if (strncmp(tokens[0], "exit", strlen("exit")) == 0) {
 		return 0;
 	}
 
-	if (strncmp(tokens[0], "prompt", strlen("prompt")) == 0) {
+	else if (strncmp(tokens[0], "prompt", strlen("prompt")) == 0) {
         strcpy(__prompt, tokens[1]);
 		return 1;
     }
 	
-	if (strncmp(tokens[0], "/bin/pwd", strlen("/bin/pwd")) == 0) {
+	else if (strncmp(tokens[0], "/bin/pwd", strlen("/bin/pwd")) == 0) {
 		char buf[MAX_TOKEN_LEN];
 		getcwd(buf,MAX_TOKEN_LEN);
+		fprintf(stderr, "%s\n", buf);
 		return 1;
 	}
 
-	if (strncmp(tokens[0], "cd", strlen("cd")) == 0) {
+	else if (strncmp(tokens[0], "cd", strlen("cd")) == 0) {
         if (nr_tokens == 1 || strncmp(tokens[1], "~", strlen("~")) == 0){
 			chdir(getenv("HOME"));
 		}
@@ -94,7 +101,7 @@ static int run_command(int nr_tokens, char *tokens[])
 		}
 		return 1;
     }
-	if (strncmp(tokens[0], "timeout", strlen("timeout")) == 0) {
+	else if (strncmp(tokens[0], "timeout", strlen("timeout")) == 0) {
 		if (nr_tokens ==1){
        		fprintf(stderr, "Current timeout is %d second\n",__timeout);
 		}
@@ -103,25 +110,54 @@ static int run_command(int nr_tokens, char *tokens[])
 		}
 		return 1;
     }
-
-	pid_t pid;
+	else if (strncmp(tokens[0], "for", strlen("for")) == 0){
+		int for_cnt = 1;
+		int start =0;
+		for_cnt *= atoi(tokens[1]);
 	
-	if ((pid = fork()) == 0){
-		if(execvp(tokens[0],tokens) == -1){
-			fprintf(stderr, "No such file or directory\n");
-			exit(EXIT_FAILURE);
+		for(int i=2; i<nr_tokens; i+=2){
+			if(strncmp(tokens[i], "for", strlen("for")) == 0){
+				for_cnt *= atoi(tokens[i+1]);
+			}
+			else{
+				start = i;	
+				break;
+			}
 		}
-		else{exit(EXIT_SUCCESS);}
-	} 
-
-	else {
-		wait(NULL);
+		for(int i=0; i<for_cnt; i++){
+			run_command(nr_tokens,tokens+start);
+		}		
+		return 1;
 	}
-	
-	return 1;
+	else {
+		void signal_handler(int signal_number);
+		struct sigaction sa;
+		sa.sa_handler= signal_handler;
+		sa.sa_flags = 0;
+		sigaction(SIGALRM,&sa,0);
+
+		if ((pid = fork()) == 0){
+			if(execvp(tokens[0],tokens) == -1){
+				close(0);
+				fprintf(stderr, "No such file or directory\n");
+				exit(EXIT_FAILURE);
+			}
+			else{exit(EXIT_SUCCESS);}
+		} 
+
+		else {
+			c_pid = pid;
+			alarm(__timeout);
+			waitpid(c_pid, &status, 0);
+			alarm(0);
+		}
+		return 1;
+	}
 }
-
-
+void signal_handler(int signal_number){
+	kill(pid,SIGKILL);
+	fprintf(stderr, "%s is timed out\n", name);
+}
 /***********************************************************************
  * initialize()
  *
