@@ -27,7 +27,7 @@
 
 /*======================================================================*/
 /*          ****** DO NOT MODIFY ANYTHING FROM THIS LINE ******         */
-/**
+/**_
  * String used as the prompt (see @main()). You may change this to
  * change the prompt */
 static char __prompt[MAX_TOKEN_LEN] = "$";
@@ -77,11 +77,14 @@ static int run_command(int nr_tokens, char *tokens[])
 
 	if (strncmp(tokens[0], "exit", strlen("exit")) == 0) {
 		return 0;
-	}
+	} 
 
 	else if (strncmp(tokens[0], "prompt", strlen("prompt")) == 0) {
-        strcpy(__prompt, tokens[1]);
-		return 1;
+		if(nr_tokens == 2){
+        	strcpy(__prompt, tokens[1]);
+			return 1;
+		}
+		else return -1;
     }
 	
 	else if (strncmp(tokens[0], "/bin/pwd", strlen("/bin/pwd")) == 0) {
@@ -94,21 +97,24 @@ static int run_command(int nr_tokens, char *tokens[])
 	else if (strncmp(tokens[0], "cd", strlen("cd")) == 0) {
         if (nr_tokens == 1 || strncmp(tokens[1], "~", strlen("~")) == 0){
 			chdir(getenv("HOME"));
+			return 1;
 		}
 		else{
-			chdir(tokens[1]);
-
+			if(chdir(tokens[1])==-1) return -1;
+			else return 1;
 		}
-		return 1;
+	
     }
 	else if (strncmp(tokens[0], "timeout", strlen("timeout")) == 0) {
 		if (nr_tokens ==1){
        		fprintf(stderr, "Current timeout is %d second\n",__timeout);
+			return 1;
 		}
-		else {
+		else if(nr_tokens ==2){
 			set_timeout(atoi(tokens[1]));
+			return 1;
 		}
-		return 1;
+		else return -1;
     }
 	else if (strncmp(tokens[0], "for", strlen("for")) == 0){
 		int for_cnt = 1;
@@ -142,7 +148,6 @@ static int run_command(int nr_tokens, char *tokens[])
 				fprintf(stderr, "No such file or directory\n");
 				exit(EXIT_FAILURE);
 			}
-			else{exit(EXIT_SUCCESS);}
 		} 
 
 		else {
@@ -173,7 +178,6 @@ static int initialize(int argc, char *argv[])
 {
 	return 0;
 }
-
 
 /***********************************************************************
  * finalize()
